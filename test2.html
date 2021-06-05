@@ -243,7 +243,7 @@ function changeBars2(){
 					let  my_min = d.min_tempurature;
 					d3.select("#tooltip")
 						.style("left",+ x(dateParse(d.date).getFullYear())-anxiswidth/48+margin+"px")
-						.style("top",anyiswidth-ytemp*(dateParse(d.date).getMonth()+1)+margin/2+"px")
+						.style("top",ytemp*(dateParse(d.date).getMonth()+1)+margin/2+"px")
 						.select("p")
 						.text("最高"+d.max_temperature+"  最低"+d.min_temperature);
 					d3.select("#tooltip").classed("hidden",false);
