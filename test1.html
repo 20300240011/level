@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+ <title>lev1</title>
+ <link rel="stylesheet" type="text/css" href="styles.css"/>
+ <script type="text/javascript"  src="d3.js"></script>
+ <style>
+.bar{
+}
+
+#tooltip {
+			position:absolute;
+			width: 150px;
+			height: 50px;
+			padding:5px;
+			background-color: white;
+			border:1px solid #ccc;
+			-webkit-border-radius:10px;
+			-moz-border-radius:10px;
+			border-radius: 10px;font-style: 
+			-webkit-box-shadow:4px 4px 10px rbga(0,0,0,0.4);
+			-moz-box-shadow:4px 4px 10px rbga(0,0,0,0.4);
+			box-shadow:4px 4px 10px rbga(0,0,0,0.4);
+			pointer-events: none;
+			text-align:center;
+		}
+#tooltip.hidden{display: none;}
+	</style>
+</head>
+<body>
+<div id="tooltip" class="hidden">
+	<p></p>
+		
+	</div>
+<script type="text/javascript">
+
+
+	var month = ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sept","Oct","Nov","Dec",""];
+	var height = 600,
+		width = 1200,
+		margin = 100,
+		anxiswidth = width-2*margin,
+		anyiswidth = height-2*margin,
+		x = d3.scaleLinear()
+				.domain([1996.5,2017.5])
+				.range([0,anxiswidth]);
+	var ypx = [],ytemp=anyiswidth/12;
+		ypx.push(0);
+		
+	for(var i = 0;i < 12;i++){
+		ypx.push(ytemp/2+i*ytemp);
+		}
+		ypx.push(12*ytemp)
+	var	y = d3.scaleOrdinal()
+				.domain(month)
+				.range(ypx);
+		var svg = d3.select("body").append("svg")
+				.attr("class","axis")
+				.attr("width",width)
+				.attr("height",height);
+		var axis = d3.axisTop()
+					.scale(x)
+					.ticks(21)
+					.tickSize(5);
+		var ayis = d3.axisLeft()
+						.scale(y)
+						.ticks(12)
+						.tickSize(5);
+		svg.append("g")
+			.attr("transform",function(){
+				return "translate("+margin+","+margin+")";
+				})
+			.call(axis);
+		svg.append("g")
+			.attr("transform",function(){
+				return "translate("+margin+","+margin+")";
+				})
+			.call(ayis);
+	d3.csv("temperature_daily.csv",function(ordata){
+
+			console.log(ordata);
+			var month = ["Jan","Feb","Mar","Apr","May",
+			"Jun","Jul","Aug","Sep","Oct","Nov","Dec" ];
+			
+			var b = 0, max = 0, data = [], flag = 0, min_data = [] ,min = ordata[0].min_temperature, f_lag = 0; 
+			 
+			 
+			 var dateParse = d3.timeParse("%Y-%m-%d");//可以将时间转化为标准时间
+			
+			//alert(typeof(dateParse(ordata[12].date)));
+			
+			 //alert(month[dateParse(ordata[100].date).getMonth()]);
+			 //if(month[dateParse(ordata[100].date).getMonth()] == month[3] ){alert("比较成功");}
+			for(var a = 0; a < ordata.length; a++){
+				if(month[dateParse(ordata[a].date).getMonth()] == month[b]){
+					//这里先判断是否是同一个月份，是的话找打最大值对应的数据，
+					if(max < ordata[a].max_temperature){
+						max = ordata[a].max_temperature;
+						flag = a;
+						}
+					if(min  > ordata[a].min_temperature){
+						min = ordata[a].min_temperature;
+						f_lag = a;
+						}	
+					}
+				if(month[dateParse(ordata[a].date).getMonth()] != month[b]){
+				//然后到下一个月份，清零最大值，然后把上一月的最大值读入最终数据，
+				    
+					
+					data.push(ordata[flag]);
+					min_data.push(ordata[f_lag]);
+					b++;			
+					max = ordata[a].max_temperature;
+					min = ordata[a].min_temperature;
+					f_lag = flag = a;
+					}
+				if(b==12){ b = 0;}
+				}
+			//alert("处理数据结束");
+			//alert(ordata.length)
+			//alert(min_data[25].date);
+			
+			//开心的是数据处理到这里就结束了！！！
+			var colorScale = d3.scaleLinear()
+								.domain([0,50])
+								.range(["blue","red"]);
+			//alert(data[0].max_temperature);
+			//alert(dateParse(data[2].date).getFullYear())
+			svg.selectAll("rect.bar")
+				.data(data)
+				.enter()
+				.append("rect")
+				.attr("class","bar")
+				
+					.attr("x",function(d,i){
+						
+						return x(dateParse(d.date).getFullYear())-anxiswidth/48+margin;
+						})
+					.attr("y",function(d,i){
+						
+						return anyiswidth-ytemp*(dateParse(d.date).getMonth()+1)+margin+1;
+						})	
+						
+				.attr("width",anxiswidth/22 )
+				.attr("height",ytemp/1.1)
+				.style("fill",function(d){
+					return colorScale(d.max_temperature);
+					
+					})
+				.on("mouseover", function (d,i) {
+					let  my_max = d.max_temperature;
+					let  my_min = d.min_tempurature;
+					d3.select("#tooltip")
+						.style("left",+ x(dateParse(d.date).getFullYear())-anxiswidth/48+margin+"px")
+						.style("top",anyiswidth-ytemp*(dateParse(d.date).getMonth()+1)+margin/2+"px")
+						.select("p")
+						.text("最高"+d.max_temperature+"  最低"+d.min_temperature);
+					d3.select("#tooltip").classed("hidden",false);
+					})
+				.on("mouseout",function(){
+					//隐藏提示条
+					d3.select("#tooltip").classed("hidden",true);
+					})	
+				.on("click",function(){
+					changeBars2();//调用排序
+						});
+				
+function changeBars2(){
+		 svg.selectAll("rect")
+			.data(min_data)
+			.style("fill",function(d){
+					return colorScale(d.max_temperature);
+					
+					})
+			.on("mouseover", function (d,i) {
+					let  my_max = d.max_temperature;
+					let  my_min = d.min_tempurature;
+					d3.select("#tooltip")
+						.style("left",+ x(dateParse(d.date).getFullYear())-anxiswidth/48+margin+"px")
+						.style("top",anyiswidth-ytemp*(dateParse(d.date).getMonth()+1)+margin/2+"px")
+						.select("p")
+						.text("最高"+d.max_temperature+"  最低"+d.min_temperature);
+					d3.select("#tooltip").classed("hidden",false);
+					})
+				.on("mouseout",function(){
+					//隐藏提示条
+					d3.select("#tooltip").classed("hidden",true);
+					})	
+				.on("click",function(){
+					changeBars1();//调用排序
+						});}
+function changeBars1(){
+		svg.selectAll("rect")
+			.data(data)
+			.style("fill",function(d){
+					return colorScale(d.max_temperature);
+					
+					})
+			.on("mouseover", function (d,i) {
+					let  my_max = d.max_temperature;
+					let  my_min = d.min_tempurature;
+					d3.select("#tooltip")
+						.style("left",+ x(dateParse(d.date).getFullYear())-anxiswidth/48+margin+"px")
+						.style("top",anyiswidth-ytemp*(dateParse(d.date).getMonth()+1)+margin/2+"px")
+						.select("p")
+						.text("最高"+d.max_temperature+"  最低"+d.min_temperature);
+					d3.select("#tooltip").classed("hidden",false);
+					})
+				.on("mouseout",function(){
+					//隐藏提示条
+					d3.select("#tooltip").classed("hidden",true);
+					})	
+				.on("click",function(){
+					changeBars2();
+					});
+		/*	.enter()
+			.attr("fill",function(d){
+			alert("emmm");
+				return colorScale(d.min_temperature);});
+		alert("进入");*/
+		}		
+			});//这是个异步处理函数
+</script>
+</body>
+</html>
